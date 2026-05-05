@@ -104,8 +104,13 @@ void multiload_config_init()
 			(GraphGetDataFunc)			multiload_graph_parm_get_data,
 			(GraphTooltipUpdateFunc)	multiload_graph_parm_tooltip_update,
 			(GraphCmdlineOutputFunc)	multiload_graph_parm_cmdline_output,
-			(GraphGetFilterFunc)		NULL
-		}
+			(GraphGetFilterFunc)		NULL		},
+		{ 	"gpu",	_("GPU"),			4,	100,		100,		"%",
+			(GraphInitFunc)				multiload_graph_gpu_init,
+			(GraphGetDataFunc)			multiload_graph_gpu_get_data,
+			(GraphTooltipUpdateFunc)	multiload_graph_gpu_tooltip_update,
+			(GraphCmdlineOutputFunc)	multiload_graph_gpu_cmdline_output,
+			(GraphGetFilterFunc)		multiload_graph_gpu_get_filter		}
 	};
 
 	memcpy(&graph_types, &temp, sizeof(graph_types));

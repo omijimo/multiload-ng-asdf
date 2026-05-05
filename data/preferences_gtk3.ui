@@ -75,6 +75,11 @@ Author: Mario cianciolo <mr.udda@gmail.com>
     <property name="step_increment">1</property>
     <property name="page_increment">4</property>
   </object>
+  <object class="GtkAdjustment" id="adjustment_border_gpu">
+    <property name="upper">16</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">4</property>
+  </object>
   <object class="GtkAdjustment" id="adjustment_ceil_disk">
     <property name="lower">500</property>
     <property name="upper">20000000</property>
@@ -173,6 +178,13 @@ Author: Mario cianciolo <mr.udda@gmail.com>
     <property name="step_increment">50</property>
     <property name="page_increment">250</property>
   </object>
+  <object class="GtkAdjustment" id="adjustment_interval_gpu">
+    <property name="lower">50</property>
+    <property name="upper">20000</property>
+    <property name="value">1000</property>
+    <property name="step_increment">50</property>
+    <property name="page_increment">250</property>
+  </object>
   <object class="GtkAdjustment" id="adjustment_padding">
     <property name="upper">40</property>
     <property name="value">2</property>
@@ -242,6 +254,13 @@ Author: Mario cianciolo <mr.udda@gmail.com>
     <property name="step_increment">5</property>
     <property name="page_increment">10</property>
   </object>
+  <object class="GtkAdjustment" id="adjustment_size_gpu">
+    <property name="lower">10</property>
+    <property name="upper">400</property>
+    <property name="value">40</property>
+    <property name="step_increment">5</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkAdjustment" id="adjustment_spacing">
     <property name="upper">40</property>
     <property name="value">1</property>
@@ -302,6 +321,12 @@ Author: Mario cianciolo <mr.udda@gmail.com>
     <property name="stock">gtk-preferences</property>
     <property name="icon_size">1</property>
   </object>
+  <object class="GtkImage" id="image_advanced_gpu">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-preferences</property>
+    <property name="icon_size">1</property>
+  </object>
   <object class="GtkImage" id="image_gradient_bat">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -351,6 +376,12 @@ Author: Mario cianciolo <mr.udda@gmail.com>
     <property name="icon_size">1</property>
   </object>
   <object class="GtkImage" id="image_gradient_temp">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">document-properties</property>
+    <property name="icon_size">1</property>
+  </object>
+  <object class="GtkImage" id="image_gradient_gpu">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="icon_name">document-properties</property>
@@ -1194,6 +1225,79 @@ Author: Mario cianciolo <mr.udda@gmail.com>
               <packing>
                 <property name="left_attach">3</property>
                 <property name="top_attach">9</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="cb_visible_gpu">
+                <property name="label" translatable="yes">GPU</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="tooltip_text" translatable="yes">Make this graph visible</property>
+                <property name="xalign">0</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">11</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button_advanced_gpu">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="tooltip_text" translatable="yes">Advanced configuration</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="hexpand">False</property>
+                <property name="image">image_advanced_gpu</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">11</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSpinButton" id="sb_size_gpu">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">Set the size of this graph</property>
+                <property name="valign">center</property>
+                <property name="invisible_char">●</property>
+                <property name="width_chars">10</property>
+                <property name="text">40</property>
+                <property name="primary_icon_activatable">False</property>
+                <property name="secondary_icon_activatable">False</property>
+                <property name="adjustment">adjustment_size_gpu</property>
+                <property name="update_policy">if-valid</property>
+                <property name="value">40</property>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">11</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSpinButton" id="sb_interval_gpu">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">Set the time between updates of this graph</property>
+                <property name="valign">center</property>
+                <property name="invisible_char">●</property>
+                <property name="width_chars">16</property>
+                <property name="text">1000</property>
+                <property name="secondary_icon_stock">gtk-dialog-warning</property>
+                <property name="primary_icon_activatable">False</property>
+                <property name="secondary_icon_activatable">False</property>
+                <property name="secondary_icon_tooltip_text" translatable="yes">Tooltip may not show if update interval is too short.</property>
+                <property name="adjustment">adjustment_interval_gpu</property>
+                <property name="update_policy">if-valid</property>
+                <property name="value">1000</property>
+              </object>
+              <packing>
+                <property name="left_attach">3</property>
+                <property name="top_attach">11</property>
               </packing>
             </child>
           </object>
@@ -3510,6 +3614,193 @@ Author: Mario cianciolo <mr.udda@gmail.com>
                           </packing>
                         </child>
                         <child>
+                          <object class="GtkSeparator" id="vseparator_gpu">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="margin_left">4</property>
+                            <property name="margin_right">4</property>
+                            <property name="orientation">vertical</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">26</property>
+                            <property name="top_attach">0</property>
+                            <property name="height">15</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="colors_label_gpu">
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="can_focus">False</property>
+                            <property name="margin_bottom">4</property>
+                            <property name="label" translatable="yes">GPU</property>
+                            <property name="use_markup">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkColorButton" id="cb_color_gpu1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="relief">none</property>
+                            <property name="use_alpha">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_gpu_busy">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Busy</property>
+                            <property name="xalign">0</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">28</property>
+                            <property name="top_attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSeparator" id="hseparator_gpu_1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="margin_top">5</property>
+                            <property name="margin_bottom">5</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">6</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="colors_label_gpu_border">
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Border</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">7</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkColorButton" id="cb_color_gpu_border">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="relief">none</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">8</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="sb_border_gpu">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="invisible_char">●</property>
+                            <property name="text">0</property>
+                            <property name="primary_icon_activatable">False</property>
+                            <property name="secondary_icon_activatable">False</property>
+                            <property name="adjustment">adjustment_border_gpu</property>
+                            <property name="update_policy">if-valid</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">9</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSeparator" id="hseparator_gpu_2">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="margin_top">5</property>
+                            <property name="margin_bottom">5</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">10</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_gpu_bg">
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Background</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">11</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkColorButton" id="cb_color_gpu_bg1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="relief">none</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">12</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="button_gradient_gpu">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Direction of gradient</property>
+                            <property name="halign">center</property>
+                            <property name="valign">center</property>
+                            <property name="hexpand">False</property>
+                            <property name="vexpand">False</property>
+                            <property name="image">image_gradient_gpu</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">13</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkColorButton" id="cb_color_gpu_bg2">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="relief">none</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">27</property>
+                            <property name="top_attach">14</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkDrawingArea" id="draw_color_bgpreview_gpu">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">28</property>
+                            <property name="top_attach">12</property>
+                            <property name="height">3</property>
+                          </packing>
+                        </child>
+                        <child>
                           <placeholder/>
                         </child>
                         <child>
@@ -4103,6 +4394,11 @@ Author: Mario cianciolo <mr.udda@gmail.com>
       <widget name="cb_color_bat_bg2"/>
       <widget name="button_gradient_bat"/>
       <widget name="cb_color_bat3"/>
+      <widget name="cb_color_gpu1"/>
+      <widget name="cb_color_gpu_border"/>
+      <widget name="cb_color_gpu_bg1"/>
+      <widget name="cb_color_gpu_bg2"/>
+      <widget name="button_gradient_gpu"/>
     </widgets>
   </object>
   <object class="GtkSizeGroup" id="sizegroup_color_labels">
@@ -4139,6 +4435,7 @@ Author: Mario cianciolo <mr.udda@gmail.com>
       <widget name="label64"/>
       <widget name="label65"/>
       <widget name="label47"/>
+      <widget name="label_gpu_busy"/>
     </widgets>
   </object>
   <object class="GtkListStore" id="liststore_source_disk">
@@ -6645,6 +6942,183 @@ Process CAN print some text to stderr.
               </object>
               <packing>
                 <property name="position">8</property>
+                <property name="tab_fill">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox" id="advanced_box_gpu">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">6</property>
+                <property name="margin_right">6</property>
+                <property name="margin_top">6</property>
+                <property name="margin_bottom">6</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkGrid" id="table_gpu">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_left">6</property>
+                    <property name="margin_right">6</property>
+                    <property name="margin_top">6</property>
+                    <property name="margin_bottom">6</property>
+                    <property name="row_spacing">6</property>
+                    <property name="column_spacing">6</property>
+                    <child>
+                      <object class="GtkLabel" id="label_col_tooltip_gpu">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Tooltip style:</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_col_dblclick_gpu">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Double click action:</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkComboBox" id="combo_tooltip_gpu">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="tooltip_text" translatable="yes">Set tooltip style of this graph</property>
+                        <property name="hexpand">True</property>
+                        <property name="model">liststore_tooltips</property>
+                        <property name="active">0</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cellrenderertext_gpu_tooltip"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                        <property name="width">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkComboBox" id="combo_dblclick_gpu">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="tooltip_text" translatable="yes">Choose what to do when double clicking on this graph</property>
+                        <property name="hexpand">True</property>
+                        <property name="model">liststore_dblclick</property>
+                        <property name="active">0</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cellrenderertext_gpu_dblclick"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">1</property>
+                        <property name="width">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="entry_dblclick_command_gpu">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="can_focus">True</property>
+                        <property name="has_tooltip">True</property>
+                        <property name="tooltip_text" translatable="yes">Set custom action of this graph</property>
+                        <property name="hexpand">True</property>
+                        <property name="invisible_char">●</property>
+                        <property name="width_chars">18</property>
+                        <property name="primary_icon_activatable">False</property>
+                        <property name="secondary_icon_activatable">False</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkImage" id="image_info_dblclick_command_gpu">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="tooltip_text" translatable="yes">The following tokens can be used within the command line:
+
+%x - graph short name - three to four lowercase characters
+
+%1 - first value of graph data - depends on the graph
+%2 - second value of graph data - depends on the graph
+%3 - third value of graph data - depends on the graph
+%4 - fourth value of graph data - depends on the graph
+%u - measure unit in which graph data values are measured
+
+%% - inserts a literal percent sign</property>
+                        <property name="hexpand">False</property>
+                        <property name="icon_name">dialog-information</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">2</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_gpu_cmd">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Double click command:</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSeparator" id="separator_gpu">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_top">5</property>
+                    <property name="margin_bottom">5</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="position">9</property>
+              </packing>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel" id="advanced_label_gpu">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">GPU</property>
+              </object>
+              <packing>
+                <property name="position">9</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>

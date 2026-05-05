@@ -31,6 +31,11 @@
 #include "gtk-compat.h"
 
 
+/* Forward declarations */
+typedef struct _LoadGraph LoadGraph;
+typedef void (*GraphUpdateFunc)(LoadGraph *g, gpointer user_data);
+
+
 #define MAX_COLORS 7
 
 enum GraphType {
@@ -43,13 +48,11 @@ enum GraphType {
 	GRAPH_TEMPERATURE,
 	GRAPH_BATTERY,
 	GRAPH_PARAMETRIC,
+	GRAPH_AMDGPU,
 
 	GRAPH_MAX
 };
 
-
-typedef struct _LoadGraph LoadGraph;
-typedef void (*GraphUpdateFunc)	(LoadGraph *g, gpointer user_data);
 
 typedef struct _GraphConfig {
 	gboolean visible;

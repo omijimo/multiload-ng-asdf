@@ -112,6 +112,7 @@ multiload_graph_net_get_data (int Maximum, int data [3], LoadGraph *g, NetData *
 	};
 
 	static GHashTable *table = NULL;
+	static gint flags_refresh_counter = 0;  /* Only refresh flags every 10 calls to avoid waking Wi-Fi driver */
 
 	char *buf = NULL;
 	size_t n = 0;
@@ -158,18 +159,31 @@ multiload_graph_net_get_data (int Maximum, int data [3], LoadGraph *g, NetData *
 				continue;
 			}
 
+			/* Read flags, address, and ifindex on initial discovery */
+			if (!info_file_read_hex64(d_ptr->path_flags, &d_ptr->flags))
+				d_ptr->flags = 0;
+			if (!info_file_read_string_s(d_ptr->path_address, d_ptr->address, sizeof(d_ptr->address), NULL)) {
+				g_free(d_ptr);
+				continue;
+			}
+			if (!info_file_read_uint64(d_ptr->path_ifindex, &d_ptr->ifindex)) {
+				g_free(d_ptr);
+				continue;
+			}
+
 			g_hash_table_insert(table, d_ptr->name, d_ptr);
 		}
 
 		d_ptr->rx_bytes = d.rx_bytes;
 		d_ptr->tx_bytes = d.tx_bytes;
 
-		if (!info_file_read_hex64(d_ptr->path_flags, &d_ptr->flags))
-			continue;
-		if (!info_file_read_string_s(d_ptr->path_address, d_ptr->address, sizeof(d_ptr->address), NULL))
-			continue;
-		if (!info_file_read_uint64(d_ptr->path_ifindex, &d_ptr->ifindex))
-			continue;
+		/* Refresh flags occasionally (every 10 calls) to minimize Wi-Fi driver wake-ups, but skip if interface is filtered out */
+		if (flags_refresh_counter % 10 == 0) {
+			guint64 flags_new = 0;
+			if (!info_file_read_hex64(d_ptr->path_flags, &flags_new))
+				flags_new = d_ptr->flags;  /* keep previous value on read error */
+			d_ptr->flags = flags_new;
+		}
 
 		if (!(d_ptr->flags & IFF_UP))
 			continue; // device is down, ignore
@@ -268,6 +282,7 @@ multiload_graph_net_get_data (int Maximum, int data [3], LoadGraph *g, NetData *
 	}
 
 	memcpy(xd->last, present, sizeof xd->last);
+	flags_refresh_counter++;  // Track call count for occasional flag refresh
 }
 
 

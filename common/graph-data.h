@@ -28,6 +28,9 @@
 
 G_BEGIN_DECLS
 
+/* Forward declarations */
+typedef struct _LoadGraph LoadGraph;
+
 
 typedef struct _CpuData {
 	guint64 last [5];
@@ -103,6 +106,11 @@ typedef struct _TemperatureData {
 typedef struct _BatteryData {
 	gpointer battery;
 } BatteryData;
+
+typedef struct _GpuData {
+	gchar name[80];
+	gdouble busy;
+} GpuData;
 
 typedef struct _ParametricData {
 	gchar command[512];
@@ -185,6 +193,17 @@ G_GNUC_INTERNAL void
 multiload_graph_bat_cmdline_output (LoadGraph *g, BatteryData *xd);
 G_GNUC_INTERNAL void
 multiload_graph_bat_tooltip_update (char *buf_title, size_t len_title, char *buf_text, size_t len_text, LoadGraph *g, BatteryData *xd, gint style);
+
+G_GNUC_INTERNAL void
+multiload_graph_gpu_init (LoadGraph *g, GpuData *xd);
+G_GNUC_INTERNAL MultiloadFilter *
+multiload_graph_gpu_get_filter (LoadGraph *g, GpuData *xd);
+G_GNUC_INTERNAL void
+multiload_graph_gpu_get_data (int Maximum, int data[1], LoadGraph *g, GpuData *xd, gboolean first_call);
+G_GNUC_INTERNAL void
+multiload_graph_gpu_cmdline_output (LoadGraph *g, GpuData *xd);
+G_GNUC_INTERNAL void
+multiload_graph_gpu_tooltip_update (char *buf_title, size_t len_title, char *buf_text, size_t len_text, LoadGraph *g, GpuData *xd, gint style);
 
 G_GNUC_INTERNAL void
 multiload_graph_parm_get_data (int Maximum, int data[4], LoadGraph *g, ParametricData *xd, gboolean first_call);

@@ -21,6 +21,7 @@
 
 #include <config.h>
 
+#include <inttypes.h>
 #include <math.h>
 #include <ctype.h>
 #include <mntent.h>
@@ -34,6 +35,10 @@
 
 
 static const char *fstype_ignore_list[] = { "rootfs", "smbfs", "nfs", "cifs", "fuse.", NULL };
+
+/* Cached device list to avoid rescanning mounts on every update */
+static GArray *cached_devices = NULL;  /* array of gchar* (device names) */
+static gint rescan_counter = 0;  /* trigger rescan every 5 calls */
 
 
 MultiloadFilter *
@@ -92,7 +97,7 @@ multiload_graph_disk_get_filter (LoadGraph *g, DiskData *xd)
 
 
 void
-multiload_graph_disk_get_data (int Maximum, int data [2], LoadGraph *g, DiskData *xd, gboolean first_call)
+multiload_graph_disk_get_data (int Maximum, int data [3], LoadGraph *g, DiskData *xd, gboolean first_call)
 {
 	FILE *f_mntent;
 	FILE *f_stat;
@@ -104,88 +109,156 @@ multiload_graph_disk_get_data (int Maximum, int data [2], LoadGraph *g, DiskData
 	char sysfs_path[PATH_MAX];
 	char *device;
 	char prefix[20];
-	guint64 read, write;
+guint64 read, write;
 	guint64 read_total = 0, write_total = 0;
 	guint64 readdiff, writediff;
 
 
-	if ((f_mntent = setmntent(MOUNTED, "r")) == NULL)
-		return;
-
 	xd->partitions[0] = '\0';
 
-	// loop through mountpoints
-	while ((mnt = getmntent(f_mntent)) != NULL) {
-
-		// skip filesystens that do not have a block device
-		if (strncmp (mnt->mnt_fsname, "/dev/", 5) != 0)
-			continue;
-
-		// skip filesystems of certain types, defined in fstype_ignore_list[]
-		gboolean ignore = FALSE;
-		for (i=0; fstype_ignore_list[i] != NULL; i++) {
-			if (strncmp (mnt->mnt_type, fstype_ignore_list[i], strlen(fstype_ignore_list[i])) == 0) {
-				ignore = TRUE;
-				break;
+	/* Rescan mounts every 5 calls to detect new/removed devices, but still read stats every call */
+	if (rescan_counter++ % 5 == 0) {
+		/* Free the old cache */
+		if (cached_devices != NULL) {
+			for (i = 0; i < cached_devices->len; i++) {
+				gchar *dev = g_array_index(cached_devices, gchar*, i);
+				g_free(dev);
 			}
-		}
-		if (ignore)
-			continue;
-
-		// extract block device and partition names
-		gboolean is_partition = FALSE;
-		device = &mnt->mnt_fsname[5];
-		g_strlcpy(prefix, device, sizeof(prefix));
-		for (i=0; prefix[i] != '\0'; i++) {
-			if (isdigit(prefix[i])) {
-				prefix[i] = '\0';
-				is_partition = TRUE;
-				break;
-			}
+			g_array_free(cached_devices, TRUE);
 		}
 
-		// filter
-		if (g->config->filter_enable) {
-			MultiloadFilter *filter = multiload_filter_new_from_existing(g->config->filter);
-			for (i=0, ignore=TRUE; i<multiload_filter_get_length(filter); i++) {
-				if (strcmp(multiload_filter_get_element_data(filter,i), device) == 0) {
-					ignore = FALSE;
-					break;
+		/* Build a new device cache from current mounts */
+		cached_devices = g_array_new(TRUE, FALSE, sizeof(gchar*));
+
+		if ((f_mntent = setmntent(MOUNTED, "r")) != NULL) {
+			while ((mnt = getmntent(f_mntent)) != NULL) {
+				/* skip filesystems that do not have a block device */
+				if (strncmp (mnt->mnt_fsname, "/dev/", 5) != 0)
+					continue;
+
+				/* skip filesystems of certain types, defined in fstype_ignore_list[] */
+				gboolean ignore = FALSE;
+				for (i=0; fstype_ignore_list[i] != NULL; i++) {
+					if (strncmp (mnt->mnt_type, fstype_ignore_list[i], strlen(fstype_ignore_list[i])) == 0) {
+						ignore = TRUE;
+						break;
+					}
+				}
+				if (ignore)
+					continue;
+
+				/* extract block device and partition names */
+			gboolean is_partition = FALSE;
+			device = &mnt->mnt_fsname[5];
+			g_strlcpy(prefix, device, sizeof(prefix));
+
+			/* NVMe partitions: nvme0n1p2 — 'p' before trailing digits */
+			if (strncmp(device, "nvme", 4) == 0) {
+				char *p = strstr(device, "p");
+				if (p && isdigit(p[1])) {
+					g_strlcpy(prefix, device, p - device + 1);
+					is_partition = TRUE;
 				}
 			}
 
-			if (ignore)
-				g_debug("[graph-disk] Ignored device '%s' due to user filter", device);
+			/* Traditional partitions (sdX, hdX, vdX, etc.): first digit marks partition */
+			if (!is_partition) {
+				for (i=0; prefix[i] != '\0'; i++) {
+					if (isdigit(prefix[i])) {
+						prefix[i] = '\0';
+						is_partition = TRUE;
+						break;
+					}
+				}
+			}
 
-			multiload_filter_free(filter);
+			/* apply user filter */
+			if (g->config->filter_enable) {
+					MultiloadFilter *filter = multiload_filter_new_from_existing(g->config->filter);
+					for (i=0, ignore=TRUE; i<multiload_filter_get_length(filter); i++) {
+						if (strcmp(multiload_filter_get_element_data(filter,i), device) == 0) {
+							ignore = FALSE;
+							break;
+						}
+					}
+					if (ignore)
+						g_debug("[graph-disk] Ignored device '%s' due to user filter", device);
+					multiload_filter_free(filter);
+				}
+				if (ignore)
+					continue;
+
+				/* generate sysfs path and verify it exists */
+				if (is_partition)
+					g_snprintf(sysfs_path, PATH_MAX, "/sys/block/%s/%s/stat", prefix, device);
+				else
+					g_snprintf(sysfs_path, PATH_MAX, "/sys/block/%s/stat", device);
+
+				if (access(sysfs_path, R_OK) != 0)
+					continue;
+
+				/* Add this device to the cache */
+				gchar *dup = g_strdup(device);
+				g_array_append_val(cached_devices, dup);
+			}
+			endmntent(f_mntent);
 		}
-		if (ignore)
-			continue;
-
-		// generate sysfs path
-		if (is_partition)
-			g_snprintf(sysfs_path, PATH_MAX, "/sys/block/%s/%s/stat", prefix, device);
-		else
-			g_snprintf(sysfs_path, PATH_MAX, "/sys/block/%s/stat", device);
-
-		// read data from sysfs
-		f_stat = fopen(sysfs_path, "r");
-		if (f_stat == NULL)
-			continue;
-		int result = fscanf(f_stat, "%*u %*u %"G_GUINT64_FORMAT" %*u %*u %*u %"G_GUINT64_FORMAT" %*u", &read, &write);
-		fclose(f_stat);
-		if (result != 2)
-			continue;
-
-		// data gathered - add to totals
-		read_total += read;
-		write_total += write;
-
-		g_strlcat (xd->partitions, device, sizeof(xd->partitions));
-		g_strlcat (xd->partitions, ", ", sizeof(xd->partitions));
 	}
-	endmntent(f_mntent);
-	xd->partitions[strlen(xd->partitions)-2] = 0;
+
+	/* Now read stat files for all cached devices (this happens every update) */
+	if (cached_devices != NULL) {
+		for (i = 0; i < cached_devices->len; i++) {
+			device = g_array_index(cached_devices, gchar*, i);
+
+			/* reconstruct the sysfs path */
+			g_strlcpy(prefix, device, sizeof(prefix));
+			gboolean is_partition = FALSE;
+
+			/* NVMe partitions: nvme0n1p2 — 'p' before trailing digits */
+			if (strncmp(device, "nvme", 4) == 0) {
+				char *p = strstr(device, "p");
+				if (p && isdigit(p[1])) {
+					g_strlcpy(prefix, device, p - device + 1);
+					is_partition = TRUE;
+				}
+			}
+
+			/* Traditional partitions (sdX, hdX, vdX, etc.): first digit marks partition */
+			if (!is_partition) {
+				for (guint k = 0; prefix[k] != '\0'; k++) {
+					if (isdigit(prefix[k])) {
+						prefix[k] = '\0';
+						is_partition = TRUE;
+						break;
+					}
+				}
+			}
+
+			if (is_partition)
+				g_snprintf(sysfs_path, PATH_MAX, "/sys/block/%s/%s/stat", prefix, device);
+			else
+				g_snprintf(sysfs_path, PATH_MAX, "/sys/block/%s/stat", device);
+
+			/* read data from sysfs */
+			f_stat = fopen(sysfs_path, "r");
+			if (f_stat == NULL)
+				continue;
+			int result = fscanf(f_stat, "%*u %*u %"SCNu64" %*u %*u %*u %"SCNu64" %*u", &read, &write);
+			fclose(f_stat);
+			if (result != 2)
+				continue;
+
+			/* data gathered - add to totals */
+			read_total += read;
+			write_total += write;
+
+			g_strlcat (xd->partitions, device, sizeof(xd->partitions));
+			g_strlcat (xd->partitions, ", ", sizeof(xd->partitions));
+		}
+	}
+
+	if (strlen(xd->partitions) >= 2)
+		xd->partitions[strlen(xd->partitions)-2] = 0;
 
 	readdiff  = read_total  - xd->last_read;
 	writediff = write_total - xd->last_write;
@@ -197,7 +270,8 @@ multiload_graph_disk_get_data (int Maximum, int data [2], LoadGraph *g, DiskData
 		max = autoscaler_get_max(&xd->scaler, g, readdiff + writediff);
 
 		if (max == 0) {
-			memset(data, 0, 4*sizeof(data[0]));
+			data[0] = readdiff  > 0 ? Maximum : 0;
+			data[1] = writediff > 0 ? Maximum : 0;
 		} else {
 			data[0] = (float)Maximum *  readdiff / (float)max;
 			data[1] = (float)Maximum * writediff / (float)max;

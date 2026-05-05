@@ -81,10 +81,50 @@ multiload_color_scheme_apply (const MultiloadColorScheme *scheme, MultiloadPlugi
 		multiload_color_scheme_apply_single(scheme, ma, i);
 }
 
+static gboolean
+multiload_colors_are_unset(const GdkRGBA *colors, guint count)
+{
+	guint i;
+
+	for (i = 0; i < count; i++) {
+		if (colors[i].red != 0.0 || colors[i].green != 0.0 || colors[i].blue != 0.0 || colors[i].alpha != 0.0)
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static void
+multiload_colors_set_default_gpu_palette(GraphConfig *conf)
+{
+	conf->colors[0].red = 1.0;
+	conf->colors[0].green = 106.0 / 255.0;
+	conf->colors[0].blue = 0.0;
+	conf->colors[0].alpha = 1.0;
+
+	conf->colors[1].red = 122.0 / 255.0;
+	conf->colors[1].green = 52.0 / 255.0;
+	conf->colors[1].blue = 0.0;
+	conf->colors[1].alpha = 1.0;
+
+	conf->colors[2].red = 40.0 / 255.0;
+	conf->colors[2].green = 26.0 / 255.0;
+	conf->colors[2].blue = 18.0 / 255.0;
+	conf->colors[2].alpha = 1.0;
+
+	conf->colors[3].red = 10.0 / 255.0;
+	conf->colors[3].green = 10.0 / 255.0;
+	conf->colors[3].blue = 10.0 / 255.0;
+	conf->colors[3].alpha = 1.0;
+}
+
 void
 multiload_color_scheme_apply_single (const MultiloadColorScheme *scheme, MultiloadPlugin *ma, guint i)
 {
 	memcpy(&ma->graph_config[i].colors, scheme->colors[i], sizeof(scheme->colors[i]));
+
+	if (i == GRAPH_AMDGPU && multiload_colors_are_unset(ma->graph_config[i].colors, multiload_config_get_num_colors(i)))
+		multiload_colors_set_default_gpu_palette(&ma->graph_config[i]);
 }
 
 gboolean

@@ -44,7 +44,7 @@ static gboolean _orientation_warning_disable = FALSE;
 #define OB(name) (gtk_builder_get_object(builder, name))
 #define EMBED_GRAPH_INDEX(ob,i) g_object_set_data(G_OBJECT(ob), "graph-index", GUINT_TO_POINTER(i))
 #define EXTRACT_GRAPH_INDEX(ob) GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(ob), "graph-index"))
-#define DEFINE_OB_NAMES_FULL(p) static const gchar* (p##_names)[GRAPH_MAX] = { #p "_cpu", #p "_mem", #p "_net", #p "_swap", #p "_load", #p "_disk", #p "_temp", #p "_bat", #p "_parm" }
+#define DEFINE_OB_NAMES_FULL(p) static const gchar* (p##_names)[GRAPH_MAX] = { #p "_cpu", #p "_mem", #p "_net", #p "_swap", #p "_load", #p "_disk", #p "_temp", #p "_bat", #p "_parm", #p "_gpu" }
 
 
 DEFINE_OB_NAMES_FULL(cb_visible);
@@ -69,7 +69,8 @@ static const gchar* spin_ceil_names[GRAPH_MAX] = {
 	"sb_ceil_disk",
 	"sb_ceil_temp",
 	"",
-	"sb_ceil_parm"
+	"sb_ceil_parm",
+	""
 };
 
 static const gchar* cb_autoscaler_names[GRAPH_MAX] = {
@@ -81,7 +82,8 @@ static const gchar* cb_autoscaler_names[GRAPH_MAX] = {
 	"cb_autoscaler_disk",
 	"cb_autoscaler_temp",
 	"",
-	"cb_autoscaler_parm"
+	"cb_autoscaler_parm",
+	""
 };
 
 static const gchar* cb_source_auto_names[GRAPH_MAX] = {
@@ -92,6 +94,7 @@ static const gchar* cb_source_auto_names[GRAPH_MAX] = {
 	"",
 	"cb_source_auto_disk",
 	"cb_source_auto_temp",
+	"",
 	"",
 	""
 };
@@ -105,6 +108,7 @@ static const gchar* treeview_source_names[GRAPH_MAX] = {
 	"treeview_source_disk",
 	"treeview_source_temp",
 	"",
+	"",
 	""
 };
 
@@ -117,6 +121,7 @@ static const gchar* cellrenderertoggle_source_names[GRAPH_MAX] = {
 	"cellrenderertoggle_source_disk",
 	"cellrenderertoggle_source_temp",
 	"",
+	"",
 	""
 };
 
@@ -128,6 +133,7 @@ static const gchar* liststore_source_names[GRAPH_MAX] = {
 	"",
 	"liststore_source_disk",
 	"liststore_source_temp",
+	"",
 	"",
 	""
 };
@@ -198,6 +204,14 @@ static const gchar* color_button_names[GRAPH_MAX][MAX_COLORS] = {
 		"cb_color_parm_border",
 		"cb_color_parm_bg1",
 		"cb_color_parm_bg2"
+	}, {
+		"cb_color_gpu1",
+		"cb_color_gpu_border",
+		"cb_color_gpu_bg1",
+		"cb_color_gpu_bg2",
+		NULL,
+		NULL,
+		NULL
 	}
 };
 
@@ -262,13 +276,13 @@ multiload_preferences_update_dynamic_widgets(MultiloadPlugin *ma)
 		gtk_widget_set_visible (GTK_WIDGET(OB(image_info_dblclick_command_names[i])), cmdline_enabled);
 
 		// autoscaler
-		if (strcmp(cb_autoscaler_names[i], "") != 0) {
+		if (cb_autoscaler_names[i] != NULL && strcmp(cb_autoscaler_names[i], "") != 0) {
 			gtk_widget_set_sensitive(GTK_WIDGET(OB(spin_ceil_names[i])),
 					!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(OB(cb_autoscaler_names[i]))));
 		}
 
 		// filter
-		if (strcmp(cb_source_auto_names[i], "") != 0) {
+		if (cb_source_auto_names[i] != NULL && strcmp(cb_source_auto_names[i], "") != 0) {
 			gtk_widget_set_sensitive(GTK_WIDGET(OB(treeview_source_names[i])),
 					!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(OB(cb_source_auto_names[i]))));
 		}
@@ -311,8 +325,9 @@ multiload_preferences_checkboxes_sensitive_cb (GtkToggleButton *checkbox, gpoint
 	if ( visible_count < 2 ) {
 		if (active) {
 			// Enable all checkboxes
-			for (i = 0; i < GRAPH_MAX; i++)
+			for (i = 0; i < GRAPH_MAX; i++) {
 				gtk_widget_set_sensitive(GTK_WIDGET(OB(cb_visible_names[i])), TRUE);
+			}
 		} else {
 			// Disable last remaining checkbox
 			gtk_widget_set_sensitive(GTK_WIDGET(OB(cb_visible_names[last_graph])), FALSE);
@@ -1388,8 +1403,11 @@ multiload_preferences_update_color_buttons (MultiloadPlugin *ma)
 {
 	guint i, c;
 	for (i=0; i<GRAPH_MAX; i++) {
-		for (c=0; c<multiload_config_get_num_colors(i); c++)
+		for (c=0; c<multiload_config_get_num_colors(i); c++) {
+			if (NULL == color_button_names[i][c])
+				break;
 			gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(OB(color_button_names[i][c])), &ma->graph_config[i].colors[c]);
+		}
 		gtk_widget_queue_draw(GTK_WIDGET(OB(draw_color_bgpreview_names[i])));
 	}
 }
@@ -1423,8 +1441,9 @@ multiload_preferences_disable_settings(guint mask)
 		multiload_preferences_init();
 
 	if (mask & MULTILOAD_SETTINGS_SIZE) {
-		for (i=0; i<GRAPH_MAX; i++)
+		for (i=0; i<GRAPH_MAX; i++) {
 			gtk_widget_set_sensitive(GTK_WIDGET(OB(sb_size_names[i])), FALSE);
+		}
 	}
 
 	if (mask & MULTILOAD_SETTINGS_PADDING)
@@ -1437,13 +1456,15 @@ multiload_preferences_disable_settings(guint mask)
 		gtk_widget_set_sensitive(GTK_WIDGET(OB("combo_orientation")), FALSE);
 
 	if (mask & MULTILOAD_SETTINGS_DBLCLICK_POLICY) {
-		for (i=0; i<GRAPH_MAX; i++)
+		for (i=0; i<GRAPH_MAX; i++) {
 			gtk_widget_set_sensitive(GTK_WIDGET(OB(combo_dblclick_names[i])), FALSE);
+		}
 	}
 
 	if (mask & MULTILOAD_SETTINGS_TOOLTIPS) {
-		for (i=0; i<GRAPH_MAX; i++)
+		for (i=0; i<GRAPH_MAX; i++) {
 			gtk_widget_set_sensitive(GTK_WIDGET(OB(combo_tooltip_names[i])), FALSE);
+		}
 	}
 
 	if (mask & MULTILOAD_SETTINGS_ORIENT_WARNING)

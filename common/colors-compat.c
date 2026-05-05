@@ -50,7 +50,13 @@ typedef struct { // removed 'shared' from memory graph
 	GdkRGBA colors[8][7];
 } s_v5;
 
-typedef MultiloadColorScheme s_v6; //added battery, 2 colors
+typedef struct { // added battery, 2 colors
+	char name[24];
+	char **xpm_data;
+	GdkRGBA colors[9][7];
+} s_v6;
+
+typedef MultiloadColorScheme s_v7; // added amdgpu graph
 
 
 MultiloadColorSchemeStatus
@@ -64,10 +70,30 @@ multiload_color_scheme_parse (gpointer data, size_t length, guint32 version, Mul
 		memcpy(scheme, data, length);
 	}
 
+	else if (version == 6) {
+		if (length != sizeof(s_v6))
+			return MULTILOAD_COLOR_SCHEME_STATUS_WRONG_FORMAT;
+		/* CONVERT V6 TO V7
+		 * Changes: added AMD GPU graph
+		 */
+
+		s_v6 *old = (s_v6*)data;
+		s_v7 *new = g_malloc0(sizeof(s_v7));
+
+		memcpy(new->name, old->name, sizeof(new->name));
+		new->xpm_data = old->xpm_data;
+		memcpy(new->colors, old->colors, sizeof(old->colors));
+
+		MultiloadColorSchemeStatus ret = multiload_color_scheme_parse(new, sizeof(s_v7), version+1, scheme);
+
+		g_free(new);
+		return ret;
+	}
+
 	else if (version == 5) {
 		if (length != sizeof(s_v5))
 			return MULTILOAD_COLOR_SCHEME_STATUS_WRONG_FORMAT;
-		/* CONVERT V4 TO V5
+		/* CONVERT V5 TO V6
 		 * Changes: added Battery graph
 		 */
 
@@ -142,7 +168,7 @@ multiload_color_scheme_parse (gpointer data, size_t length, guint32 version, Mul
 
 		// no action required: new data is at the end of the buffer. Just return a new buffer of proper size
 		guchar *buf = g_malloc(sizeof(s_v2));
-		memcpy(buf, data, sizeof(s_v2));
+		memcpy(buf, data, sizeof(s_v1));
 
 		MultiloadColorSchemeStatus ret = multiload_color_scheme_parse(buf, sizeof(s_v2), version+1, scheme);
 

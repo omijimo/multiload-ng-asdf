@@ -282,7 +282,10 @@ void multiload_defaults(MultiloadPlugin *ma)
 	for ( i = 0; i < GRAPH_MAX; i++ ) {
 		conf = &ma->graph_config[i];
 		conf->border_width = DEFAULT_BORDER_WIDTH;
-		conf->visible = i == 0 ? TRUE : FALSE;
+		if (i == GRAPH_AMDGPU)
+			conf->visible = conf->visible ? TRUE : FALSE;
+		else
+			conf->visible = i == 0 ? TRUE : FALSE;
 		conf->interval = DEFAULT_INTERVAL;
 		conf->size = DEFAULT_SIZE;
 		conf->tooltip_style = DEFAULT_TOOLTIP_STYLE;
@@ -355,6 +358,7 @@ multiload_new()
 	ma->extra_data[GRAPH_TEMPERATURE]	= (gpointer)g_new0(TemperatureData, 1);
 	ma->extra_data[GRAPH_BATTERY]		= (gpointer)g_new0(BatteryData, 1);
 	ma->extra_data[GRAPH_PARAMETRIC]	= (gpointer)g_new0(ParametricData, 1);
+	ma->extra_data[GRAPH_AMDGPU]		= (gpointer)g_new0(GpuData, 1);
 
 	for (i=0; i < GRAPH_MAX; i++) {
 		ma->graphs[i] = load_graph_new (ma, i);
