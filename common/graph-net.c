@@ -80,6 +80,8 @@ multiload_graph_net_get_filter (LoadGraph *g, NetData *xd)
 	MultiloadFilter *filter = multiload_filter_new();
 
 	FILE *f = info_file_required_fopen(PATH_NET_DEV, "r");
+	if (f == NULL)
+		return filter;
 	while (getline(&buf, &n, f) >= 0) {
 		// skip header lines of /proc/net/dev
 		if ((end = strchr(buf, ':')) == NULL)
@@ -119,6 +121,7 @@ multiload_graph_net_get_data (int Maximum, int data [3], LoadGraph *g, NetData *
 	uint i,j;
 	ulong valid_ifaces_len=0;
 	FILE *f_net;
+	static gboolean warned_missing_netdev = FALSE;
 
 	guint64 present[NET_MAX] = { 0, 0, 0 };
 	gint64 delta[NET_MAX];
@@ -136,6 +139,18 @@ multiload_graph_net_get_data (int Maximum, int data [3], LoadGraph *g, NetData *
 	xd->ifaces[0] = 0;
 
 	f_net = info_file_required_fopen(PATH_NET_DEV, "r");
+	if (f_net == NULL) {
+		if (!warned_missing_netdev) {
+			g_warning("[graph-net] Could not open %s", PATH_NET_DEV);
+			warned_missing_netdev = TRUE;
+		}
+		g_free(buf);
+		g_array_free(valid_ifaces, TRUE);
+		data[NET_IN] = 0;
+		data[NET_OUT] = 0;
+		data[NET_LOCAL] = 0;
+		return;
+	}
 	while (getline(&buf, &n, f_net) >= 0) {
 		// skip header lines of /proc/net/dev
 		if (strchr(buf, ':') == NULL)

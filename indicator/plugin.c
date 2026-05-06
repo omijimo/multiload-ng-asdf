@@ -47,6 +47,7 @@ static gchar icon_directory[PATH_MAX];
 static gchar icon_filename[2][PATH_MAX];
 static int icon_current_index=0;
 static gboolean indicator_connected;
+static gboolean indicator_disconnected_warned;
 static GtkWidget *graphs_menu_items[GRAPH_MAX];
 
 static void
@@ -120,7 +121,6 @@ static void
 indicator_update_pixbuf(MultiloadPlugin *ma)
 {
 	GtkAllocation allocation;
-	GError *error = NULL;
 
 	cairo_status_t status;
 	cairo_surface_t *surface;
@@ -129,10 +129,20 @@ indicator_update_pixbuf(MultiloadPlugin *ma)
 	int i;
 	double x=ma->padding, y=ma->padding;
 
+	// Guard against stale widget pointer when panel disconnects or screen sleeps
+	if (ma->container == NULL || !GTK_IS_WIDGET(ma->container))
+		return;
+
 	gtk_widget_get_allocation (GTK_WIDGET(ma->container), &allocation);
+	if (allocation.width <= 0 || allocation.height <= 0)
+		return;
 
 	surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, allocation.width, allocation.height);
-	g_assert (surface != NULL);
+	if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS) {
+		g_warning ("Cannot create Multiload-ng indicator surface: %s", cairo_status_to_string (cairo_surface_status (surface)));
+		cairo_surface_destroy (surface);
+		return;
+	}
 	cr = cairo_create (surface);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 
@@ -149,12 +159,11 @@ indicator_update_pixbuf(MultiloadPlugin *ma)
 	}
 
 	status = cairo_surface_write_to_png (surface, icon_filename[icon_current_index]);
-	g_assert(status == CAIRO_STATUS_SUCCESS);
-	if (error != NULL) {
-		g_error("Cannot save Multiload-ng window to temporary buffer: %s\n", error->message);
-		g_clear_error(&error);
-	} else
+	if (status != CAIRO_STATUS_SUCCESS) {
+		g_warning ("Cannot save Multiload-ng window to temporary buffer: %s", cairo_status_to_string (status));
+	} else {
 		app_indicator_set_icon(indicator, icon_filename[icon_current_index]);
+	}
 
 	icon_current_index = 1-icon_current_index;
 	cairo_surface_destroy (surface);
@@ -174,9 +183,17 @@ indicator_graph_update_cb(LoadGraph *g, gpointer user_data)
 	g_return_if_fail (g->surface != NULL);
 
 	if (indicator_connected == FALSE) {
-		g_warning ("Indicator is not connected to panel, thus it cannot be displayed.");
+		if (!indicator_disconnected_warned) {
+			g_warning ("Indicator is not connected to panel, thus it cannot be displayed.");
+			indicator_disconnected_warned = TRUE;
+		}
 		return;
 	}
+	indicator_disconnected_warned = FALSE;
+
+	// Guard against stale widget pointer when panel disconnects or screen sleeps
+	if (g->multiload->container == NULL || !GTK_IS_WIDGET(g->multiload->container))
+		return;
 
 	// resize widget and offscreen window to fit into panel
 	if (multiload_get_orientation(g->multiload) == GTK_ORIENTATION_HORIZONTAL)
@@ -193,6 +210,8 @@ static void
 indicator_connection_changed_cb (AppIndicator *indicator, gboolean connected, MultiloadPlugin *ma)
 {
 	indicator_connected = connected;
+	if (connected)
+		indicator_disconnected_warned = FALSE;
 }
 
 static void
@@ -291,13 +310,15 @@ int main (int argc, char **argv)
 	else
 		multiload_ui_read (multiload);
 
-	multiload_start(multiload);
-
 	// create offscreen window to keep widget drawing
 	offscr = gtk_offscreen_window_new ();
 	gtk_widget_set_size_request(GTK_WIDGET(multiload->container), -1, -1);
 	gtk_container_add(GTK_CONTAINER(offscr), GTK_WIDGET(multiload->container));
 	gtk_widget_show(offscr);
+
+	create_buffer_files();
+
+	multiload_start(multiload);
 
 	// create indicator
 	indicator = app_indicator_new ("indicator-multiload-ng", about_data_icon, APP_INDICATOR_CATEGORY_HARDWARE);
@@ -312,7 +333,6 @@ int main (int argc, char **argv)
 		multiload_set_update_cb(multiload, i, indicator_graph_update_cb, indicator);
 
 	set_defaults(multiload);
-	create_buffer_files();
 	build_menu(multiload);
 
 	// cleanup on SIGTERM

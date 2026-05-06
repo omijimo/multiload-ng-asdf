@@ -131,8 +131,6 @@ list_temp_acpitz(TemperatureSourceData **list, gboolean init)
 					g_snprintf(buf, PATH_MAX, "%s/trip_point_%d_temp", li->node_path, j);
 					info_file_read_double (buf, &li->critical, 1000.0);
 				}
-
-				fclose(f);
 			}
 			i++;
 		}

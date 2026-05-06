@@ -75,6 +75,7 @@ multiload_graph_cpu_get_data (int Maximum, int data [4], LoadGraph *g, CpuData *
 	guint64 diff[CPU_MAX];
 
 	size_t n;
+	static gboolean warned_missing_stat = FALSE;
 
 	info_file_read_key_double (PATH_CPUINFO, "cpu MHz", &xd->cpu0_mhz, 1);
 	info_file_read_double (PATH_UPTIME, &xd->uptime, 1);
@@ -86,6 +87,14 @@ multiload_graph_cpu_get_data (int Maximum, int data [4], LoadGraph *g, CpuData *
 
 	// CPU stats
 	FILE *f = info_file_required_fopen(PATH_STAT, "r");
+	if (f == NULL) {
+		if (!warned_missing_stat) {
+			g_warning("[graph-cpu] Could not open %s", PATH_STAT);
+			warned_missing_stat = TRUE;
+		}
+		memset(data, 0, 4 * sizeof(data[0]));
+		return;
+	}
 	n = fscanf(f, "cpu %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT,
 				time+CPU_USER, time+CPU_NICE, time+CPU_SYS, time+CPU_IDLE, time+CPU_IOWAIT, &irq, &softirq);
 	fclose(f);

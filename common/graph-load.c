@@ -56,6 +56,7 @@ void
 multiload_graph_load_get_data (int Maximum, int data [1], LoadGraph *g, LoadData *xd, gboolean first_call)
 {
 	int n;
+	static gboolean warned_missing_loadavg = FALSE;
 
 	// load average
 	n = getloadavg(xd->loadavg, 3);
@@ -63,6 +64,14 @@ multiload_graph_load_get_data (int Maximum, int data [1], LoadGraph *g, LoadData
 
 	// threads stats
 	FILE *f = info_file_required_fopen(PATH_LOADAVG, "r");
+	if (f == NULL) {
+		if (!warned_missing_loadavg) {
+			g_warning("[graph-load] Could not open %s", PATH_LOADAVG);
+			warned_missing_loadavg = TRUE;
+		}
+		data[0] = 0;
+		return;
+	}
 	n = fscanf(f, "%*s %*s %*s %u/%u", &xd->proc_active, &xd->proc_count);
 	fclose(f);
 	g_assert_cmpint(n, ==, 2);

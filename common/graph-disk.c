@@ -54,6 +54,8 @@ multiload_graph_disk_get_filter (LoadGraph *g, DiskData *xd)
 	MultiloadFilter *filter = multiload_filter_new();
 
 	FILE *f = info_file_required_fopen("/proc/partitions", "r");
+	if (f == NULL)
+		return filter;
 
 	while(getline(&buf, &n, f) >= 0) {
 		if (2 != fscanf(f, "%*u %*u %"G_GUINT64_FORMAT" %s", &blocks, device))
@@ -255,6 +257,14 @@ guint64 read, write;
 			g_strlcat (xd->partitions, device, sizeof(xd->partitions));
 			g_strlcat (xd->partitions, ", ", sizeof(xd->partitions));
 		}
+	}
+
+	if (cached_devices == NULL || cached_devices->len == 0) {
+		data[0] = 0;
+		data[1] = 0;
+		xd->read_speed = 0;
+		xd->write_speed = 0;
+		return;
 	}
 
 	if (strlen(xd->partitions) >= 2)

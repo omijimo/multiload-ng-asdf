@@ -21,6 +21,7 @@
 
 #include <config.h>
 
+#include <ctype.h>
 #include <dirent.h>
 #include <limits.h>
 #include <math.h>
@@ -59,11 +60,11 @@ list_gpu_amdgpu (GpuSourceData **list, gboolean init)
 	guint count = 0;
 	guint i;
 
-	dir = opendir(drm_root);
-	if (dir == NULL)
-		return FALSE;
-
 	if (init) {
+		dir = opendir(drm_root);
+		if (dir == NULL)
+			return FALSE;
+
 		/* First pass: count valid amdgpu cards with gpu_busy_percent */
 		while ((dirent = readdir(dir)) != NULL) {
 			/* Only process cardN entries */

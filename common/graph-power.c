@@ -58,11 +58,11 @@ list_power_hwmon (PowerSourceData **list, gboolean init)
 	guint count = 0;
 	guint i;
 
-	dir = opendir(hwmon_root);
-	if (dir == NULL)
-		return FALSE;
-
 	if (init) {
+		dir = opendir(hwmon_root);
+		if (dir == NULL)
+			return FALSE;
+
 		/* First pass: count valid hwmon devices with power*_average */
 		while ((dirent = readdir(dir)) != NULL) {
 			/* Only process hwmonN entries */

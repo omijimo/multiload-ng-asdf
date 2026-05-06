@@ -28,7 +28,6 @@ FILE*
 info_file_required_fopen (const gchar *path, const gchar *mode)
 {
 	FILE *f = fopen (path, mode);
-	g_assert (f != NULL);
 	return f;
 }
 
