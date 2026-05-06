@@ -41,6 +41,7 @@ typedef struct {
 	gchar label[80];
 	gchar power_path[PATH_MAX];
 	gdouble power_uw;  /* power in microwatts */
+	gdouble power_max_uw;  /* max/cap power in microwatts, 0 if not available */
 } PowerSourceData;
 
 static PowerSourceData *sources_list = NULL;
@@ -120,6 +121,19 @@ list_power_hwmon (PowerSourceData **list, gboolean init)
 			}
 
 			g_strlcpy(li->label, li->name, sizeof(li->label));
+
+			/* Try to read power limit/cap (power1_max, power1_cap, etc.) */
+			li->power_max_uw = 0;  /* default: no limit found */
+			const char *limit_files[] = { "power1_max", "power1_cap", NULL };
+			for (int j = 0; limit_files[j] != NULL; j++) {
+				g_snprintf(path, sizeof(path), "%s/%s/%s", hwmon_root, dirent->d_name, limit_files[j]);
+				guint64 limit_val = 0;
+				if (info_file_read_uint64(path, &limit_val) && limit_val > 0) {
+					li->power_max_uw = (gdouble)limit_val;
+					g_debug("[graph-power] %s: detected limit from %s: %.0f W", li->name, limit_files[j], limit_val / 1e6);
+					break;
+				}
+			}
 			i++;
 		}
 
@@ -188,7 +202,14 @@ multiload_graph_power_get_data (int Maximum, int data[1], LoadGraph *g, PowerDat
 {
 	PowerSourceData *use = NULL;
 	guint i;
-	gdouble max_w = 1000.0;  /* default max 1000W for auto-scaling */
+	gdouble max_w;
+
+	/* Use configured scaler_max if set; otherwise use autoscaling */
+	if (graph_types[g->id].scaler_max > 0) {
+		max_w = (gdouble)graph_types[g->id].scaler_max;
+	} else {
+		max_w = 1000.0;  /* default max 1000W for auto-scaling */
+	}
 
 	if (!list_power_hwmon(&sources_list, FALSE)) {
 		g_debug("[graph-power] list_power_hwmon returned FALSE in get_data");
@@ -223,12 +244,18 @@ multiload_graph_power_get_data (int Maximum, int data[1], LoadGraph *g, PowerDat
 	/* Convert microwatts to watts */
 	gdouble power_w = use->power_uw / 1e6;
 
-	/* Determine a sensible max for auto-scaling based on observed values */
-	if (power_w > max_w * 0.5) {
-		/* If current reading is >50% of max, scale up */
-		max_w = ceil(power_w / 100.0) * 100.0;
-		if (max_w < 500.0)
-			max_w = 500.0;
+	/* Try to use detected hardware power limit if available and no fixed max configured */
+	if (graph_types[g->id].scaler_max <= 0) {
+		if (use->power_max_uw > 0) {
+			/* Use detected limit */
+			max_w = use->power_max_uw / 1e6;
+			g_debug("[graph-power] using detected limit: %.0f W", max_w);
+		} else if (power_w > max_w * 0.5) {
+			/* Fall back to auto-scaling based on observed values */
+			max_w = ceil(power_w / 100.0) * 100.0;
+			if (max_w < 500.0)
+				max_w = 500.0;
+		}
 	}
 
 	data[0] = rint (Maximum * (float)power_w / (float)max_w);
