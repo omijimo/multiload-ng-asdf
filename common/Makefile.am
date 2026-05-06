@@ -19,7 +19,7 @@ multiload_ng_core_la_SOURCES = \
 	filter.c filter.h \
 	gtk-compat.c gtk-compat.h \
 	graph-bat.c graph-cpu.c graph-mem.c graph-net.c graph-swap.c \
-	graph-load.c graph-disk.c graph-temp.c graph-parm.c graph-gpu.c \
+	graph-load.c graph-disk.c graph-temp.c graph-parm.c graph-gpu.c graph-power.c \
 	graph-data.h \
 	info-file.c info-file.h \
 	load-graph.c load-graph.h \

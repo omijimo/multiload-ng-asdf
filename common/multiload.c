@@ -359,6 +359,7 @@ multiload_new()
 	ma->extra_data[GRAPH_BATTERY]		= (gpointer)g_new0(BatteryData, 1);
 	ma->extra_data[GRAPH_PARAMETRIC]	= (gpointer)g_new0(ParametricData, 1);
 	ma->extra_data[GRAPH_AMDGPU]		= (gpointer)g_new0(GpuData, 1);
+	ma->extra_data[GRAPH_POWER]		= (gpointer)g_new0(PowerData, 1);
 
 	for (i=0; i < GRAPH_MAX; i++) {
 		ma->graphs[i] = load_graph_new (ma, i);

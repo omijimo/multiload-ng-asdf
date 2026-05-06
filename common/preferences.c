@@ -44,7 +44,7 @@ static gboolean _orientation_warning_disable = FALSE;
 #define OB(name) (gtk_builder_get_object(builder, name))
 #define EMBED_GRAPH_INDEX(ob,i) g_object_set_data(G_OBJECT(ob), "graph-index", GUINT_TO_POINTER(i))
 #define EXTRACT_GRAPH_INDEX(ob) GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(ob), "graph-index"))
-#define DEFINE_OB_NAMES_FULL(p) static const gchar* (p##_names)[GRAPH_MAX] = { #p "_cpu", #p "_mem", #p "_net", #p "_swap", #p "_load", #p "_disk", #p "_temp", #p "_bat", #p "_parm", #p "_gpu" }
+#define DEFINE_OB_NAMES_FULL(p) static const gchar* (p##_names)[GRAPH_MAX] = { #p "_cpu", #p "_mem", #p "_net", #p "_swap", #p "_load", #p "_disk", #p "_temp", #p "_bat", #p "_parm", #p "_gpu", #p "_power" }
 
 
 DEFINE_OB_NAMES_FULL(cb_visible);
@@ -70,6 +70,7 @@ static const gchar* spin_ceil_names[GRAPH_MAX] = {
 	"sb_ceil_temp",
 	"",
 	"sb_ceil_parm",
+	"",
 	""
 };
 
@@ -83,6 +84,7 @@ static const gchar* cb_autoscaler_names[GRAPH_MAX] = {
 	"cb_autoscaler_temp",
 	"",
 	"cb_autoscaler_parm",
+	"",
 	""
 };
 
@@ -94,6 +96,7 @@ static const gchar* cb_source_auto_names[GRAPH_MAX] = {
 	"",
 	"cb_source_auto_disk",
 	"cb_source_auto_temp",
+	"",
 	"",
 	"",
 	""
@@ -109,6 +112,7 @@ static const gchar* treeview_source_names[GRAPH_MAX] = {
 	"treeview_source_temp",
 	"",
 	"",
+	"",
 	""
 };
 
@@ -122,6 +126,7 @@ static const gchar* cellrenderertoggle_source_names[GRAPH_MAX] = {
 	"cellrenderertoggle_source_temp",
 	"",
 	"",
+	"",
 	""
 };
 
@@ -133,6 +138,7 @@ static const gchar* liststore_source_names[GRAPH_MAX] = {
 	"",
 	"liststore_source_disk",
 	"liststore_source_temp",
+	"",
 	"",
 	"",
 	""
@@ -212,6 +218,14 @@ static const gchar* color_button_names[GRAPH_MAX][MAX_COLORS] = {
 		NULL,
 		NULL,
 		NULL
+	}, {
+		"cb_color_power1",
+		"cb_color_power_border",
+		"cb_color_power_bg1",
+		"cb_color_power_bg2",
+		NULL,
+		NULL,
+		NULL
 	}
 };
 
@@ -272,8 +286,10 @@ multiload_preferences_update_dynamic_widgets(MultiloadPlugin *ma)
 
 		// cmdline enable
 		gboolean cmdline_enabled = (conf->dblclick_policy == DBLCLICK_POLICY_CMDLINE);
-		gtk_widget_set_sensitive (GTK_WIDGET(OB(entry_dblclick_command_names[i])), cmdline_enabled);
-		gtk_widget_set_visible (GTK_WIDGET(OB(image_info_dblclick_command_names[i])), cmdline_enabled);
+		if (OB(entry_dblclick_command_names[i]) != NULL)
+			gtk_widget_set_sensitive (GTK_WIDGET(OB(entry_dblclick_command_names[i])), cmdline_enabled);
+		if (OB(image_info_dblclick_command_names[i]) != NULL)
+			gtk_widget_set_visible (GTK_WIDGET(OB(image_info_dblclick_command_names[i])), cmdline_enabled);
 
 		// autoscaler
 		if (cb_autoscaler_names[i] != NULL && strcmp(cb_autoscaler_names[i], "") != 0) {
@@ -1320,19 +1336,30 @@ multiload_preferences_connect_signals (MultiloadPlugin *ma)
 	guint i, j;
 
 	for (i=0; i<GRAPH_MAX; i++) {
-		g_signal_connect(G_OBJECT(OB(sb_size_names[i])), "input", G_CALLBACK(multiload_preferences_size_input_cb), ma);
-		g_signal_connect(G_OBJECT(OB(sb_size_names[i])), "output", G_CALLBACK(multiload_preferences_size_output_cb), ma);
-		g_signal_connect(G_OBJECT(OB(sb_size_names[i])), "value-changed", G_CALLBACK(multiload_preferences_size_change_cb), ma);
-		g_signal_connect(G_OBJECT(OB(sb_interval_names[i])), "input", G_CALLBACK(multiload_preferences_interval_input_cb), ma);
-		g_signal_connect(G_OBJECT(OB(sb_interval_names[i])), "output", G_CALLBACK(multiload_preferences_interval_output_cb), ma);
-		g_signal_connect(G_OBJECT(OB(sb_interval_names[i])), "value-changed", G_CALLBACK(multiload_preferences_interval_change_cb), ma);
-		g_signal_connect(G_OBJECT(OB(cb_visible_names[i])), "toggled", G_CALLBACK(multiload_preferences_graph_visibility_cb), ma);
-		g_signal_connect(G_OBJECT(OB(cb_visible_names[i])), "toggled", G_CALLBACK(multiload_preferences_checkboxes_sensitive_cb), ma);
-		g_signal_connect(G_OBJECT(OB(button_advanced_names[i])), "clicked", G_CALLBACK(multiload_preferences_button_advanced_clicked_cb), ma);
-		g_signal_connect(G_OBJECT(OB(combo_tooltip_names[i])), "changed", G_CALLBACK(multiload_preferences_tooltip_style_changed_cb), ma);
-		g_signal_connect(G_OBJECT(OB(combo_dblclick_names[i])), "changed", G_CALLBACK(multiload_preferences_dblclick_policy_changed_cb), ma);
-		g_signal_connect(G_OBJECT(OB(entry_dblclick_command_names[i])), "changed", G_CALLBACK(multiload_preferences_dblclick_command_changed_cb), ma);
-		g_signal_connect(G_OBJECT(OB(sb_border_names[i])), "value-changed", G_CALLBACK(multiload_preferences_border_changed_cb), ma);
+		if (OB(sb_size_names[i]) != NULL) {
+			g_signal_connect(G_OBJECT(OB(sb_size_names[i])), "input", G_CALLBACK(multiload_preferences_size_input_cb), ma);
+			g_signal_connect(G_OBJECT(OB(sb_size_names[i])), "output", G_CALLBACK(multiload_preferences_size_output_cb), ma);
+			g_signal_connect(G_OBJECT(OB(sb_size_names[i])), "value-changed", G_CALLBACK(multiload_preferences_size_change_cb), ma);
+		}
+		if (OB(sb_interval_names[i]) != NULL) {
+			g_signal_connect(G_OBJECT(OB(sb_interval_names[i])), "input", G_CALLBACK(multiload_preferences_interval_input_cb), ma);
+			g_signal_connect(G_OBJECT(OB(sb_interval_names[i])), "output", G_CALLBACK(multiload_preferences_interval_output_cb), ma);
+			g_signal_connect(G_OBJECT(OB(sb_interval_names[i])), "value-changed", G_CALLBACK(multiload_preferences_interval_change_cb), ma);
+		}
+		if (OB(cb_visible_names[i]) != NULL) {
+			g_signal_connect(G_OBJECT(OB(cb_visible_names[i])), "toggled", G_CALLBACK(multiload_preferences_graph_visibility_cb), ma);
+			g_signal_connect(G_OBJECT(OB(cb_visible_names[i])), "toggled", G_CALLBACK(multiload_preferences_checkboxes_sensitive_cb), ma);
+		}
+		if (OB(button_advanced_names[i]) != NULL)
+			g_signal_connect(G_OBJECT(OB(button_advanced_names[i])), "clicked", G_CALLBACK(multiload_preferences_button_advanced_clicked_cb), ma);
+		if (OB(combo_tooltip_names[i]) != NULL)
+			g_signal_connect(G_OBJECT(OB(combo_tooltip_names[i])), "changed", G_CALLBACK(multiload_preferences_tooltip_style_changed_cb), ma);
+		if (OB(combo_dblclick_names[i]) != NULL)
+			g_signal_connect(G_OBJECT(OB(combo_dblclick_names[i])), "changed", G_CALLBACK(multiload_preferences_dblclick_policy_changed_cb), ma);
+		if (OB(entry_dblclick_command_names[i]) != NULL)
+			g_signal_connect(G_OBJECT(OB(entry_dblclick_command_names[i])), "changed", G_CALLBACK(multiload_preferences_dblclick_command_changed_cb), ma);
+		if (OB(sb_border_names[i]) != NULL)
+			g_signal_connect(G_OBJECT(OB(sb_border_names[i])), "value-changed", G_CALLBACK(multiload_preferences_border_changed_cb), ma);
 
 		// autoscaler
 		if (cb_autoscaler_names[i][0] != '\0') {
@@ -1442,7 +1469,8 @@ multiload_preferences_disable_settings(guint mask)
 
 	if (mask & MULTILOAD_SETTINGS_SIZE) {
 		for (i=0; i<GRAPH_MAX; i++) {
-			gtk_widget_set_sensitive(GTK_WIDGET(OB(sb_size_names[i])), FALSE);
+			if (OB(sb_size_names[i]) != NULL)
+				gtk_widget_set_sensitive(GTK_WIDGET(OB(sb_size_names[i])), FALSE);
 		}
 	}
 
@@ -1457,13 +1485,15 @@ multiload_preferences_disable_settings(guint mask)
 
 	if (mask & MULTILOAD_SETTINGS_DBLCLICK_POLICY) {
 		for (i=0; i<GRAPH_MAX; i++) {
-			gtk_widget_set_sensitive(GTK_WIDGET(OB(combo_dblclick_names[i])), FALSE);
+			if (OB(combo_dblclick_names[i]) != NULL)
+				gtk_widget_set_sensitive(GTK_WIDGET(OB(combo_dblclick_names[i])), FALSE);
 		}
 	}
 
 	if (mask & MULTILOAD_SETTINGS_TOOLTIPS) {
 		for (i=0; i<GRAPH_MAX; i++) {
-			gtk_widget_set_sensitive(GTK_WIDGET(OB(combo_tooltip_names[i])), FALSE);
+			if (OB(combo_tooltip_names[i]) != NULL)
+				gtk_widget_set_sensitive(GTK_WIDGET(OB(combo_tooltip_names[i])), FALSE);
 		}
 	}
 
@@ -1495,40 +1525,54 @@ multiload_preferences_fill_dialog (GtkWidget *dialog, MultiloadPlugin *ma)
 	for (i=0; i<GRAPH_MAX; i++) {
 		conf = &ma->graph_config[i];
 
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(sb_size_names[i])), conf->size*1.00);
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(sb_interval_names[i])), conf->interval*1.00);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(OB(cb_visible_names[i])), conf->visible);
-		gtk_entry_set_max_length(GTK_ENTRY(OB(entry_dblclick_command_names[i])), sizeof(conf->dblclick_cmdline));
-		gtk_combo_box_set_active (GTK_COMBO_BOX(OB(combo_tooltip_names[i])), conf->tooltip_style);
-		gtk_combo_box_set_active (GTK_COMBO_BOX(OB(combo_dblclick_names[i])), conf->dblclick_policy);
-		gtk_entry_set_text (GTK_ENTRY(OB(entry_dblclick_command_names[i])), conf->dblclick_cmdline);
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(sb_border_names[i])), conf->border_width*1.00);
+		if (OB(sb_size_names[i]) != NULL)
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(sb_size_names[i])), conf->size*1.00);
+		if (OB(sb_interval_names[i]) != NULL)
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(sb_interval_names[i])), conf->interval*1.00);
+		if (OB(cb_visible_names[i]) != NULL)
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(OB(cb_visible_names[i])), conf->visible);
+		if (OB(entry_dblclick_command_names[i]) != NULL) {
+			gtk_entry_set_max_length(GTK_ENTRY(OB(entry_dblclick_command_names[i])), sizeof(conf->dblclick_cmdline));
+			gtk_entry_set_text (GTK_ENTRY(OB(entry_dblclick_command_names[i])), conf->dblclick_cmdline);
+		}
+		if (OB(combo_tooltip_names[i]) != NULL)
+			gtk_combo_box_set_active (GTK_COMBO_BOX(OB(combo_tooltip_names[i])), conf->tooltip_style);
+		if (OB(combo_dblclick_names[i]) != NULL)
+			gtk_combo_box_set_active (GTK_COMBO_BOX(OB(combo_dblclick_names[i])), conf->dblclick_policy);
+		if (OB(sb_border_names[i]) != NULL)
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(sb_border_names[i])), conf->border_width*1.00);
 
 		// autoscaler
 		if (cb_autoscaler_names[i][0] != '\0') {
 			tmp = multiload_get_max_value(ma, i);
-			gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(spin_ceil_names[i])), tmp*1.00);
-			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(OB(cb_autoscaler_names[i])), (tmp<0));
+			if (OB(spin_ceil_names[i]) != NULL)
+				gtk_spin_button_set_value(GTK_SPIN_BUTTON(OB(spin_ceil_names[i])), tmp*1.00);
+			if (OB(cb_autoscaler_names[i]) != NULL)
+				gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(OB(cb_autoscaler_names[i])), (tmp<0));
 		}
 
 		// filter
 		if (cb_source_auto_names[i][0] != '\0') {
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(OB(cb_source_auto_names[i])), !conf->filter_enable);
+			if (OB(cb_source_auto_names[i]) != NULL)
+				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(OB(cb_source_auto_names[i])), !conf->filter_enable);
 
-			MultiloadFilter *filter = graph_types[i].get_filter(ma->graphs[i], ma->extra_data[i]);
-			for (j=0; j<multiload_filter_get_length(filter); j++) {
-				gtk_list_store_insert_with_values (GTK_LIST_STORE(OB(liststore_source_names[i])), NULL, -1,
-					LS_SOURCE_COLUMN_SELECTED,	multiload_filter_get_element_selected	(filter, j),
-					LS_SOURCE_COLUMN_LABEL,		multiload_filter_get_element_label		(filter, j),
-					LS_SOURCE_COLUMN_ABSENT,	multiload_filter_get_element_absent		(filter, j),
-					LS_SOURCE_COLUMN_DATA,		multiload_filter_get_element_data		(filter, j),
-				-1);
+			if (OB(liststore_source_names[i]) != NULL) {
+				MultiloadFilter *filter = graph_types[i].get_filter(ma->graphs[i], ma->extra_data[i]);
+				for (j=0; j<multiload_filter_get_length(filter); j++) {
+					gtk_list_store_insert_with_values (GTK_LIST_STORE(OB(liststore_source_names[i])), NULL, -1,
+						LS_SOURCE_COLUMN_SELECTED,	multiload_filter_get_element_selected	(filter, j),
+						LS_SOURCE_COLUMN_LABEL,		multiload_filter_get_element_label		(filter, j),
+						LS_SOURCE_COLUMN_ABSENT,	multiload_filter_get_element_absent		(filter, j),
+						LS_SOURCE_COLUMN_DATA,		multiload_filter_get_element_data		(filter, j),
+					-1);
+				}
+				multiload_filter_free(filter);
 			}
-			multiload_filter_free(filter);
 		}
 
 		// advanced preferences - tab menu names
-		gtk_notebook_set_menu_label_text(GTK_NOTEBOOK(OB("advanced_notebook")), GTK_WIDGET(OB(advanced_box_names[i])), graph_types[i].label);
+		if (OB(advanced_box_names[i]) != NULL)
+			gtk_notebook_set_menu_label_text(GTK_NOTEBOOK(OB("advanced_notebook")), GTK_WIDGET(OB(advanced_box_names[i])), graph_types[i].label);
 	}
 	gtk_range_set_value(GTK_RANGE(OB("hscale_spacing")), (gdouble)ma->spacing);
 	gtk_range_set_value(GTK_RANGE(OB("hscale_padding")), (gdouble)ma->padding);

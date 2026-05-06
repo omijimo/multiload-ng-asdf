@@ -105,6 +105,7 @@ multiload_get_scaler (MultiloadPlugin *ma, guint graph_id)
 		case GRAPH_SWAPLOAD:
 		case GRAPH_BATTERY:
 		case GRAPH_AMDGPU:
+		case GRAPH_POWER:
 			// no autoscaler
 			return NULL;
 		case GRAPH_NETLOAD:

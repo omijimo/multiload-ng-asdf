@@ -110,7 +110,13 @@ void multiload_config_init()
 			(GraphGetDataFunc)			multiload_graph_gpu_get_data,
 			(GraphTooltipUpdateFunc)	multiload_graph_gpu_tooltip_update,
 			(GraphCmdlineOutputFunc)	multiload_graph_gpu_cmdline_output,
-			(GraphGetFilterFunc)		multiload_graph_gpu_get_filter		}
+			(GraphGetFilterFunc)		multiload_graph_gpu_get_filter		},
+	{ 	"power",	_("Power"),		4,	125,		125,		"W",
+			(GraphInitFunc)				multiload_graph_power_init,
+			(GraphGetDataFunc)			multiload_graph_power_get_data,
+			(GraphTooltipUpdateFunc)	multiload_graph_power_tooltip_update,
+			(GraphCmdlineOutputFunc)	multiload_graph_power_cmdline_output,
+			(GraphGetFilterFunc)		multiload_graph_power_get_filter		}
 	};
 
 	memcpy(&graph_types, &temp, sizeof(graph_types));

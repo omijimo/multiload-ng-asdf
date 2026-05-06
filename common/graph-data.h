@@ -112,6 +112,11 @@ typedef struct _GpuData {
 	gdouble busy;
 } GpuData;
 
+typedef struct _PowerData {
+	gchar name[80];
+	gdouble power_w;
+} PowerData;
+
 typedef struct _ParametricData {
 	gchar command[512];
 	gchar message[512];
@@ -204,6 +209,17 @@ G_GNUC_INTERNAL void
 multiload_graph_gpu_cmdline_output (LoadGraph *g, GpuData *xd);
 G_GNUC_INTERNAL void
 multiload_graph_gpu_tooltip_update (char *buf_title, size_t len_title, char *buf_text, size_t len_text, LoadGraph *g, GpuData *xd, gint style);
+
+G_GNUC_INTERNAL void
+multiload_graph_power_init (LoadGraph *g, PowerData *xd);
+G_GNUC_INTERNAL MultiloadFilter *
+multiload_graph_power_get_filter (LoadGraph *g, PowerData *xd);
+G_GNUC_INTERNAL void
+multiload_graph_power_get_data (int Maximum, int data[1], LoadGraph *g, PowerData *xd, gboolean first_call);
+G_GNUC_INTERNAL void
+multiload_graph_power_cmdline_output (LoadGraph *g, PowerData *xd);
+G_GNUC_INTERNAL void
+multiload_graph_power_tooltip_update (char *buf_title, size_t len_title, char *buf_text, size_t len_text, LoadGraph *g, PowerData *xd, gint style);
 
 G_GNUC_INTERNAL void
 multiload_graph_parm_get_data (int Maximum, int data[4], LoadGraph *g, ParametricData *xd, gboolean first_call);

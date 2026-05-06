@@ -224,6 +224,20 @@ load_graph_update (LoadGraph *g)
 	guint H = g->draw_height - 2 * (g->multiload->graph_config[g->id].border_width);
 	graph_types[g->id].get_data(H, g->data [0], g, g->multiload->extra_data[g->id], g->first_update);
 
+	/* Debug: log data shape and first column values to help diagnose empty graphs */
+	{
+		guint num_data = multiload_config_get_num_data(g->id);
+		GString *vals = g_string_new(NULL);
+		for (guint j = 0; j < num_data; j++) {
+			g_string_append_printf(vals, "%d%s", g->data[0][j], (j+1< num_data)?",":"");
+		}
+		g_debug("[load-graph] update for '%s' id=%u num_data=%u firstcol=[%s]", graph_types[g->id].name, g->id, num_data, vals->str);
+		for (guint j = 0; j < num_data; j++) {
+			GdkRGBA *c = &g->config->colors[j];
+			g_debug("[load-graph] color idx=%u rgba=%.3f,%.3f,%.3f,%.3f", j, c->red, c->green, c->blue, c->alpha);
+		}
+		g_string_free(vals, TRUE);
+	}
 	g->first_update = FALSE;
 
 	if (g->tooltip_update)
